@@ -13,6 +13,9 @@
 			remove_ripples()
 			return DOCKING_IMMOBILIZED
 
+	//Count the number of engines (and also for sound effect)
+	current_engines = count_engines()
+
 	var/obj/docking_port/stationary/old_dock = get_docked()
 
 	// The area that gets placed under where the shuttle moved from
@@ -203,3 +206,10 @@
 			continue
 		var/turf/oldT = moved_atoms[moved_object]
 		moved_object.lateShuttleMove(oldT, movement_force, movement_direction)
+
+/obj/docking_port/mobile/proc/reset_air()
+	var/list/turfs = return_ordered_turfs(x, y, z, dir)
+	for(var/i in 1 to length(turfs))
+		var/turf/open/T = turfs[i]
+		if(istype(T))
+			T.air.copy_from_turf(T)

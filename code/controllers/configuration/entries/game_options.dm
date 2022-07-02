@@ -70,8 +70,6 @@
 
 /datum/config_entry/flag/disable_peaceborg
 
-/datum/config_entry/flag/economy	//money money money money money money money money money money money money
-
 /datum/config_entry/flag/donator_items 	// do you need to be a donator to use donator items
 
 /datum/config_entry/number/traitor_scaling_coeff	//how much does the amount of players get divided by to determine traitors
@@ -255,13 +253,15 @@
 
 /datum/config_entry/flag/emojis
 
+/datum/config_entry/flag/badges
+
 /datum/config_entry/keyed_list/multiplicative_movespeed
 	key_mode = KEY_MODE_TYPE
 	value_mode = VALUE_MODE_NUM
 	config_entry_value = list(			//DEFAULTS
 	/mob/living/simple_animal = 1,
 	/mob/living/silicon/pai = 1,
-	/mob/living/carbon/alien/humanoid/hunter = -1,
+	/mob/living/carbon/alien/humanoid/hunter = -0.5,
 	/mob/living/carbon/alien/humanoid/royal/praetorian = 1,
 	/mob/living/carbon/alien/humanoid/royal/queen = 3
 	)
@@ -374,7 +374,7 @@
 	min_val = 0
 
 /datum/config_entry/number/space_budget
-	config_entry_value = 16
+	config_entry_value = 40
 	integer = FALSE
 	min_val = 0
 
@@ -438,11 +438,6 @@
 /datum/config_entry/number/max_slimeperson_bodies
 	config_entry_value = 10
 
-//Maximum citation fine
-/datum/config_entry/number/maxfine
-	config_entry_value = 1000
-	min_val = 0
-
 
 //Shuttle size limiter
 /datum/config_entry/number/max_shuttle_count
@@ -459,8 +454,6 @@
 /datum/config_entry/string/master_mode
 	config_entry_value = "extended"
 
-//Bluespace Miners
-/datum/config_entry/number/roundstart_bluespace_miners
-	min_val = 0
+/datum/config_entry/flag/spare_enforce_coc
 
-/datum/config_entry/flag/bsminer_researchable
+/datum/config_entry/flag/station_traits

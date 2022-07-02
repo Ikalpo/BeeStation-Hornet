@@ -23,7 +23,7 @@
 	)
 	result = /obj/item/reagent_containers/food/snacks/donut/chaos
 
-datum/crafting_recipe/food/donut/meat
+/datum/crafting_recipe/food/donut/meat
 	time = 15
 	name = "Meat donut"
 	reqs = list(
@@ -342,7 +342,7 @@ datum/crafting_recipe/food/donut/meat
 	name = "Spicy-pocket"
 	reqs = list(
 		/obj/item/reagent_containers/food/snacks/pastrybase = 1,
-		/obj/item/reagent_containers/food/snacks/grown/chili
+		/obj/item/reagent_containers/food/snacks/grown/chili = 1
 	)
 	result = /obj/item/reagent_containers/food/snacks/donkpocket/spicy
 	subcategory = CAT_PASTRY
@@ -443,16 +443,6 @@ datum/crafting_recipe/food/donut/meat
 	subcategory = CAT_PASTRY
 
 ////////////////////////////////////////////OTHER////////////////////////////////////////////
-
-/datum/crafting_recipe/food/hotdog
-	name = "Hot dog"
-	reqs = list(
-		/datum/reagent/consumable/ketchup = 5,
-		/obj/item/reagent_containers/food/snacks/bun = 1,
-		/obj/item/reagent_containers/food/snacks/sausage = 1
-	)
-	result = /obj/item/reagent_containers/food/snacks/hotdog
-	subcategory = CAT_PASTRY
 
 /datum/crafting_recipe/food/meatbun
 	name = "Meat bun"

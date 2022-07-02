@@ -2,7 +2,7 @@ import { sortBy } from 'common/collections';
 import { flow } from 'common/fp';
 import { toFixed } from 'common/math';
 import { useBackend } from '../backend';
-import { Button, Flex, LabeledList, ProgressBar, Section, Table } from '../components';
+import { Button, LabeledList, ProgressBar, Section, Stack, Table } from '../components';
 import { getGasColor, getGasLabel } from '../constants';
 import { NtosWindow } from '../layouts';
 
@@ -11,7 +11,6 @@ const logScale = value => Math.log2(16 + Math.max(0, value)) - 4;
 export const NtosSupermatterMonitor = (props, context) => {
   return (
     <NtosWindow
-      resizable
       width={600}
       height={350}>
       <NtosWindow.Content scrollable>
@@ -29,6 +28,7 @@ export const NtosSupermatterMonitorContent = (props, context) => {
     SM_power,
     SM_ambienttemp,
     SM_ambientpressure,
+    SM_radiation,
   } = data;
   if (!active) {
     return (
@@ -41,8 +41,8 @@ export const NtosSupermatterMonitorContent = (props, context) => {
   ])(data.gases || []);
   const gasMaxAmount = Math.max(1, ...gases.map(gas => gas.amount));
   return (
-    <Flex spacing={1}>
-      <Flex.Item width="270px">
+    <Stack>
+      <Stack.Item width="270px">
         <Section title="Metrics">
           <LabeledList>
             <LabeledList.Item label="Integrity">
@@ -65,6 +65,23 @@ export const NtosSupermatterMonitorContent = (props, context) => {
                   bad: [7000, Infinity],
                 }}>
                 {toFixed(SM_power) + ' MeV/cm3'}
+              </ProgressBar>
+            </LabeledList.Item>
+            <LabeledList.Item label="Radiation">
+              <ProgressBar
+                value={SM_radiation}
+                minValue={0}
+                maxValue={7000}
+                ranges={{
+                  // The threshold where enough radiation gets to the
+                  // collectors to start generating power. Experimentally
+                  // determined, because radiation waves are inscrutable.
+                  grey: [-Infinity, 320],
+                  good: [320, 5000],
+                  average: [5000, 7000],
+                  bad: [7000, Infinity],
+                }}>
+                {toFixed(SM_radiation) + ' Sv/h'}
               </ProgressBar>
             </LabeledList.Item>
             <LabeledList.Item label="Temperature">
@@ -96,8 +113,8 @@ export const NtosSupermatterMonitorContent = (props, context) => {
             </LabeledList.Item>
           </LabeledList>
         </Section>
-      </Flex.Item>
-      <Flex.Item grow={1} basis={0}>
+      </Stack.Item>
+      <Stack.Item grow={1} basis={0}>
         <Section
           title="Gases"
           buttons={(
@@ -122,8 +139,8 @@ export const NtosSupermatterMonitorContent = (props, context) => {
             ))}
           </LabeledList>
         </Section>
-      </Flex.Item>
-    </Flex>
+      </Stack.Item>
+    </Stack>
   );
 };
 

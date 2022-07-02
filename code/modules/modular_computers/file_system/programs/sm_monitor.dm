@@ -31,24 +31,25 @@
 	refresh()
 
 /datum/computer_file/program/supermatter_monitor/kill_program(forced = FALSE)
-	active = null
+	for(var/supermatter in supermatters)
+		clear_supermatter(supermatter)
 	supermatters = null
 	..()
 
 // Refreshes list of active supermatter crystals
 /datum/computer_file/program/supermatter_monitor/proc/refresh()
+	for(var/supermatter in supermatters)
+		clear_supermatter(supermatter)
 	supermatters = list()
 	var/turf/T = get_turf(ui_host())
 	if(!T)
 		return
 	for(var/obj/machinery/power/supermatter_crystal/S in GLOB.machines)
 		// Delaminating, not within coverage, not on a tile.
-		if (!isturf(S.loc) || !(is_station_level(S.z) || is_mining_level(S.z) || S.z == T.z))
+		if (!isturf(S.loc) || !(is_station_level(S.z) || is_mining_level(S.z) || S.get_virtual_z_level() == T.get_virtual_z_level()))
 			continue
 		supermatters.Add(S)
-
-	if(!(active in supermatters))
-		active = null
+		RegisterSignal(S, COMSIG_PARENT_QDELETING, .proc/react_to_del)
 
 /datum/computer_file/program/supermatter_monitor/proc/get_status()
 	. = SUPERMATTER_INACTIVE
@@ -72,6 +73,7 @@
 		data["active"] = TRUE
 		data["SM_integrity"] = active.get_integrity()
 		data["SM_power"] = active.power
+		data["SM_radiation"] = active.last_rads
 		data["SM_ambienttemp"] = air.return_temperature()
 		data["SM_ambientpressure"] = air.return_pressure()
 		//data["SM_EPR"] = round((air.total_moles / air.group_multiplier) / 23.1, 0.01)
@@ -81,13 +83,13 @@
 		if(air.total_moles())
 			for(var/gasid in air.get_gases())
 				gasdata.Add(list(list(
-				"name"= GLOB.meta_gas_info[gasid][META_GAS_NAME],
+				"name"= GLOB.gas_data.names[gasid],
 				"amount" = round(100*air.get_moles(gasid)/air.total_moles(),0.01))))
 
 		else
 			for(var/gasid in air.get_gases())
 				gasdata.Add(list(list(
-					"name"= GLOB.meta_gas_info[gasid][META_GAS_NAME],
+					"name"= GLOB.gas_data.names[gasid],
 					"amount" = 0)))
 
 		data["gases"] = gasdata
@@ -124,3 +126,13 @@
 				if(S.uid == newuid)
 					active = S
 			return TRUE
+
+/datum/computer_file/program/supermatter_monitor/proc/react_to_del(datum/source)
+	SIGNAL_HANDLER
+	clear_supermatter(source)
+
+/datum/computer_file/program/supermatter_monitor/proc/clear_supermatter(matter)
+	supermatters -= matter
+	if(matter == active)
+		active = null
+	UnregisterSignal(matter, COMSIG_PARENT_QDELETING)

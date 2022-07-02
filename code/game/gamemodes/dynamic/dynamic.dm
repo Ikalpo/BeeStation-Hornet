@@ -41,12 +41,10 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 
 	/// Running information about the threat. Can store text or datum entries.
 	var/list/threat_log = list()
-	/// List of roundstart rules used for selecting the rules.
-	var/list/roundstart_rules = list()
 	/// List of latejoin rules used for selecting the rules.
-	var/list/latejoin_rules = list()
+	var/list/latejoin_rules
 	/// List of midround rules used for selecting the rules.
-	var/list/midround_rules = list()
+	var/list/midround_rules
 	/** # Pop range per requirement.
 	  * If the value is five the range is:
 	  * 0-4, 5-9, 10-14, 15-19, 20-24, 25-29, 30-34, 35-39, 40-54, 45+
@@ -192,8 +190,10 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 		return
 	if (href_list["forced_extended"])
 		GLOB.dynamic_forced_extended = !GLOB.dynamic_forced_extended
+		message_admins("[key_name(usr)] toggled dynamic's Forced Extended setting to [GLOB.dynamic_forced_extended].")
 	else if (href_list["no_stacking"])
 		GLOB.dynamic_no_stacking = !GLOB.dynamic_no_stacking
+		message_admins("[key_name(usr)] toggled dynamic's No Stacking setting to [GLOB.dynamic_no_stacking].")
 	else if (href_list["adjustthreat"])
 		var/threatadd = input("Specify how much threat to add (negative to subtract). This can inflate the threat level.", "Adjust Threat", 0) as null|num
 		if(!threatadd)
@@ -204,6 +204,7 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 		else
 			spend_midround_budget(-threatadd)
 			threat_log += "[worldtime2text()]: [key_name(usr)] decreased threat by [-threatadd] threat."
+		message_admins("[key_name(usr)] adjusted the dynamic threat level by [threatadd] threat.")
 	else if (href_list["injectlate"])
 		latejoin_injection_cooldown = 0
 		forced_injection = TRUE
@@ -216,8 +217,9 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 		show_threatlog(usr)
 	else if (href_list["stacking_limit"])
 		GLOB.dynamic_stacking_limit = input(usr,"Change the threat limit at which round-endings rulesets will start to stack.", "Change stacking limit", null) as num
+		message_admins("[key_name(usr)] adjusted dynamic's Stacking Limit setting to [GLOB.dynamic_stacking_limit].")
 	else if(href_list["force_latejoin_rule"])
-		var/added_rule = input(usr,"What ruleset do you want to force upon the next latejoiner? This will bypass threat level and population restrictions.", "Rigging Latejoin", null) as null|anything in sortList(latejoin_rules)
+		var/added_rule = input(usr,"What ruleset do you want to force upon the next latejoiner? This will bypass threat level and population restrictions.", "Rigging Latejoin", null) as null|anything in sortNames(init_rulesets(/datum/dynamic_ruleset/latejoin))
 		if (!added_rule)
 			return
 		forced_latejoin_rule = added_rule
@@ -226,7 +228,7 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 		forced_latejoin_rule = null
 		dynamic_log("[key_name(usr)] cleared the forced latejoin ruleset.")
 	else if(href_list["force_midround_rule"])
-		var/added_rule = input(usr,"What ruleset do you want to force right now? This will bypass threat level and population restrictions.", "Execute Ruleset", null) as null|anything in sortList(midround_rules)
+		var/added_rule = input(usr,"What ruleset do you want to force right now? This will bypass threat level and population restrictions.", "Execute Ruleset", null) as null|anything in sortNames(init_rulesets(/datum/dynamic_ruleset/midround))
 		if (!added_rule)
 			return
 		dynamic_log("[key_name(usr)] executed the [added_rule] ruleset.")
@@ -280,14 +282,10 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 			. += "Your station is somehow in the middle of hostile territory, in clear view of any enemy of the corporation. Your likelihood to survive is low, and station destruction is expected and almost inevitable. Secure any sensitive material and neutralize any enemy you will come across. It is important that you at least try to maintain the station.<BR>"
 			. += "Good luck."
 
-	if(station_goals.len)
-		. += "<hr><b>Special Orders for [station_name()]:</b>"
-		for(var/datum/station_goal/G in station_goals)
-			G.on_report()
-			. += G.get_report()
+	. += generate_station_goal_report()
 
 	print_command_report(., "Central Command Status Summary", announce=FALSE)
-	priority_announce("A summary has been copied and printed to all communications consoles.", "Security level elevated.", 'sound/ai/intercept.ogg')
+	priority_announce("A summary has been copied and printed to all communications consoles.", "Security level elevated.", ANNOUNCER_INTERCEPT)
 	if(GLOB.security_level < SEC_LEVEL_BLUE)
 		set_security_level(SEC_LEVEL_BLUE)
 
@@ -373,23 +371,12 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 
 	setup_parameters()
 	setup_hijacking()
+	setup_rulesets()
 
-	var/valid_roundstart_ruleset = 0
-	for (var/rule in subtypesof(/datum/dynamic_ruleset))
-		var/datum/dynamic_ruleset/ruleset = new rule()
-		// Simple check if the ruleset should be added to the lists.
-		if(ruleset.name == "")
-			continue
-		configure_ruleset(ruleset)
-		switch(ruleset.ruletype)
-			if("Roundstart")
-				roundstart_rules += ruleset
-				if(ruleset.weight)
-					valid_roundstart_ruleset++
-			if ("Latejoin")
-				latejoin_rules += ruleset
-			if ("Midround")
-				midround_rules += ruleset
+	//We do this here instead of with the midround rulesets and such because these rules can hang refs
+	//To new_player and such, and we want the datums to just free when the roundstart work is done
+	var/list/roundstart_rules = init_rulesets(/datum/dynamic_ruleset/roundstart)
+
 	for(var/i in GLOB.new_player_list)
 		var/mob/dead/new_player/player = i
 		if(player.ready == PLAYER_READY_TO_PLAY && player.mind)
@@ -402,11 +389,8 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 
 	if(GLOB.dynamic_forced_roundstart_ruleset.len > 0)
 		rigged_roundstart()
-	else if(valid_roundstart_ruleset < 1)
-		log_game("DYNAMIC: [valid_roundstart_ruleset] enabled roundstart rulesets.")
-		return TRUE
 	else
-		roundstart()
+		roundstart(roundstart_rules)
 
 	dynamic_log("[round_start_budget] round start budget was left, donating it to midrounds.")
 	threat_log += "[worldtime2text()]: [round_start_budget] round start budget was left, donating it to midrounds."
@@ -424,6 +408,29 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 		rule.candidates.Cut() // The rule should not use candidates at this point as they all are null.
 		addtimer(CALLBACK(src, /datum/game_mode/dynamic/.proc/execute_roundstart_rule, rule), rule.delay)
 	..()
+
+/// Initializes the internal ruleset variables
+/datum/game_mode/dynamic/proc/setup_rulesets()
+	midround_rules = init_rulesets(/datum/dynamic_ruleset/midround)
+	latejoin_rules = init_rulesets(/datum/dynamic_ruleset/latejoin)
+
+/// Returns a list of the provided rulesets.
+/// Configures their variables to match config.
+/datum/game_mode/dynamic/proc/init_rulesets(ruleset_subtype)
+	var/list/rulesets = list()
+
+	for (var/datum/dynamic_ruleset/ruleset_type as anything in subtypesof(ruleset_subtype))
+		if (initial(ruleset_type.name) == "")
+			continue
+
+		if (initial(ruleset_type.weight) == 0)
+			continue
+
+		var/ruleset = new ruleset_type
+		configure_ruleset(ruleset)
+		rulesets += ruleset
+
+	return rulesets
 
 /// A simple roundstart proc used when dynamic_forced_roundstart_ruleset has rules in it.
 /datum/game_mode/dynamic/proc/rigged_roundstart()
@@ -446,7 +453,7 @@ GLOBAL_VAR_INIT(dynamic_forced_threat_level, -1)
 
 			spend_roundstart_budget(picking_roundstart_rule(rule, scaled_times, forced = TRUE))
 
-/datum/game_mode/dynamic/proc/roundstart()
+/datum/game_mode/dynamic/proc/roundstart(list/roundstart_rules)
 	if (GLOB.dynamic_forced_extended)
 		log_game("DYNAMIC: Starting a round of forced extended.")
 		return TRUE

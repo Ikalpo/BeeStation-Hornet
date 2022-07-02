@@ -6,7 +6,7 @@
 	icon_state = "construction_drone"
 	var/area/starting_area
 
-/mob/camera/ai_eye/remote/base_construction/Initialize()
+/mob/camera/ai_eye/remote/base_construction/Initialize(mapload)
 	. = ..()
 	starting_area = get_area(loc)
 
@@ -49,7 +49,7 @@
 
 	light_color = LIGHT_COLOR_PINK
 
-/obj/machinery/computer/camera_advanced/base_construction/Initialize()
+/obj/machinery/computer/camera_advanced/base_construction/Initialize(mapload)
 	. = ..()
 	RCD = new(src)
 
@@ -202,27 +202,27 @@
 	name = "Select Airlock Type"
 	button_icon_state = "airlock_select"
 
-datum/action/innate/aux_base/airlock_type/Activate()
+/datum/action/innate/aux_base/airlock_type/Activate()
 	if(..())
 		return
 
 	B.RCD.change_airlock_setting()
 
 
-datum/action/innate/aux_base/window_type
+/datum/action/innate/aux_base/window_type
 	name = "Select Window Type"
 	button_icon_state = "window_select"
 
-datum/action/innate/aux_base/window_type/Activate()
+/datum/action/innate/aux_base/window_type/Activate()
 	if(..())
 		return
 	B.RCD.toggle_window_type()
 
-datum/action/innate/aux_base/place_fan
+/datum/action/innate/aux_base/place_fan
 	name = "Place Tiny Fan"
 	button_icon_state = "build_fan"
 
-datum/action/innate/aux_base/place_fan/Activate()
+/datum/action/innate/aux_base/place_fan/Activate()
 	if(..())
 		return
 
@@ -244,11 +244,11 @@ datum/action/innate/aux_base/place_fan/Activate()
 	to_chat(owner, "<span class='notice'>Tiny fan placed. [B.fans_remaining] remaining.</span>")
 	playsound(fan_turf, 'sound/machines/click.ogg', 50, 1)
 
-datum/action/innate/aux_base/install_turret
+/datum/action/innate/aux_base/install_turret
 	name = "Install Plasma Anti-Wildlife Turret"
 	button_icon_state = "build_turret"
 
-datum/action/innate/aux_base/install_turret/Activate()
+/datum/action/innate/aux_base/install_turret/Activate()
 	if(..())
 		return
 

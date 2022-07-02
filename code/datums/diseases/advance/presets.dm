@@ -16,6 +16,25 @@
 	symptoms = list(new/datum/symptom/cough)
 	..()
 
+/datum/disease/advance/feline_hysteria
+	name = "Feline Hysteria"
+	desc = "A very dangerous disease supposedly engineered by the Animal Rights Coalition. Causes mass feline hysteria."
+	copy_type = /datum/disease/advance
+	mutable = FALSE
+
+/datum/disease/advance/feline_hysteria/New()
+	name = "Feline Hysteria"
+	desc = "A very dangerous disease supposedly engineered by the Animal Rights Coalition. Causes mass feline hysteria."
+	mutable = FALSE
+	symptoms = list(new/datum/symptom/toxoplasmosis, new/datum/symptom/viralincubate, new/datum/symptom/sneeze, new/datum/symptom/revitiligo, new/datum/symptom/inorganic_adaptation, new/datum/symptom/organ_restoration)
+	for(var/datum/symptom/S as() in (symptoms))
+		if(istype(S, /datum/symptom/toxoplasmosis))
+			continue
+		if(istype(S, /datum/symptom/organ_restoration))
+			continue
+		S.neutered = TRUE
+	..()
+
 //Randomly generated Disease, for virus crates and events
 /datum/disease/advance/random
 	name = "Experimental Disease"
@@ -23,7 +42,7 @@
 	var/randomname = TRUE
 	var/datum/symptom/setsymptom = null
 
-/datum/disease/advance/random/New(max_symptoms, max_level = 9, var/datum/symptom/specialsymptom = setsymptom)
+/datum/disease/advance/random/New(max_symptoms, max_level = 9, min_level = 1, var/datum/symptom/specialsymptom = setsymptom, var/atom/infected)
 	if(!max_symptoms)
 		max_symptoms = (2 + rand(1, (VIRUS_SYMPTOM_LIMIT-2)))
 	if(specialsymptom)
@@ -33,9 +52,9 @@
 		var/datum/symptom/S = symptom
 		if(S == specialsymptom)
 			continue
-		if(initial(S.level) > max_level)
+		if(initial(S.level) > max_level || initial(S.level) < min_level)
 			continue
-		if(initial(S.level) <= 0) //unobtainable symptoms
+		if(initial(S.level) <= -1) //unobtainable symptoms
 			continue
 		possible_symptoms += S
 	for(var/i in 1 to max_symptoms)
@@ -49,7 +68,10 @@
 	Finalize()
 	Refresh()
 	if(randomname)
-		name = "Sample #[rand(1,10000)]"
+		var/randname = random_disease_name(infected)
+		AssignName(randname)
+		name = randname
+
 
 /datum/disease/advance/random/macrophage
 	name = "Unknown Disease"
